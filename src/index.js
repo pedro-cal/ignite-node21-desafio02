@@ -11,18 +11,64 @@ const users = [];
 
 function checksExistsUserAccount(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+  const existingUser = users.find((user) => user.username === username);
+
+  if (existingUser) {
+    request.user = existingUser;
+  } else {
+    response.status(404).json({ error: "No such user found." })
+  }
+
+  next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
   // Complete aqui
+  const { user } = request;
+
+  if (user.pro || (!user.pro && user.todos.length < 10)) {
+    next();
+  }
+
+  if (!user.pro && user.todos.length >= 10) {
+    response.status(403);
+  }
 }
 
 function checksTodoExists(request, response, next) {
   // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const existingUser = users.find((user) => user.username === username);
+  const idIsValid = validate(id);
+  const todoBelongsToUser = (existingUser && idIsValid)
+    ? existingUser.todos.find((todo) => todo.id === id)
+    : false;
+
+  if (!existingUser) response.status(404);
+  if (!idIsValid) response.status(400);
+  if (!todoBelongsToUser) response.status(404);
+
+  if (existingUser && idIsValid && todoBelongsToUser) {
+    request.user = existingUser;
+    request.todo = todoBelongsToUser;
+    next();
+  }
 }
 
 function findUserById(request, response, next) {
   // Complete aqui
+  const { id } = request.params;
+  const existingUser = users.find((user) => user.id === id);
+
+  if (existingUser) {
+    request.user = existingUser;
+    next();
+  } else {
+    response.status(404);
+  }
 }
 
 app.post('/users', (request, response) => {
